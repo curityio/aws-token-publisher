@@ -91,8 +91,6 @@ public final class AccessTokenIssuedListener implements EventListener<IssuedAcce
 
         digest.update(signature.getBytes());
         String hashedSignature = Base64.getEncoder().encodeToString(digest.digest());
-        _logger.info("HASHED SIGNATURE IS: " + hashedSignature);
-        _logger.info("TOKEN VALUE IS: " + tokenValue);
 
         AmazonDynamoDB dynamoDB = AmazonDynamoDBClientBuilder
                 .standard()
