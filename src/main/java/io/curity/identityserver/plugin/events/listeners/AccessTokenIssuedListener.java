@@ -16,12 +16,6 @@
 
 package io.curity.identityserver.plugin.events.listeners;
 
-import com.amazonaws.auth.AWSStaticCredentialsProvider;
-import com.amazonaws.auth.BasicAWSCredentials;
-import com.amazonaws.regions.Regions;
-import com.amazonaws.services.dynamodbv2.AmazonDynamoDB;
-import com.amazonaws.services.dynamodbv2.AmazonDynamoDBClientBuilder;
-import com.amazonaws.services.dynamodbv2.model.*;
 import io.curity.identityserver.plugin.events.listeners.config.AWSEventListenerConfiguration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -29,30 +23,42 @@ import se.curity.identityserver.sdk.data.events.IssuedAccessTokenOAuthEvent;
 import se.curity.identityserver.sdk.errors.ErrorCode;
 import se.curity.identityserver.sdk.event.EventListener;
 import se.curity.identityserver.sdk.service.ExceptionFactory;
+import software.amazon.awssdk.auth.credentials.*;
+import software.amazon.awssdk.regions.Region;
+import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
+import software.amazon.awssdk.services.dynamodb.model.*;
+import software.amazon.awssdk.services.sts.StsClient;
+import software.amazon.awssdk.services.sts.model.*;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
-import java.util.*;
+import java.util.Base64;
+import java.util.HashMap;
+import java.util.Optional;
 
 public final class AccessTokenIssuedListener implements EventListener<IssuedAccessTokenOAuthEvent>
 {
     private static final Logger _logger = LoggerFactory.getLogger(AccessTokenIssuedListener.class);
 
     private final ExceptionFactory _exceptionFactory;
-    private final String _awsAccessKeyId;
-    private final String _awsAccessKeySecret;
-    private final Regions _awsRegion;
+    private final Optional<String> _awsAccessKeyId;
+    private final Optional<String> _awsAccessKeySecret;
+    private final Optional<String> _awsProfileName;
+    private final Region _awsRegion;
     private final String _tableName;
     private final String _keyColumn;
-
+    private final Optional<String> _roleARN;
+    private AwsCredentialsProvider _creds;
 
     public AccessTokenIssuedListener(AWSEventListenerConfiguration configuration)
     {
         _exceptionFactory = configuration.getExceptionFactory();
         _awsAccessKeyId = configuration.getAccessKeyId();
         _awsAccessKeySecret = configuration.getAccessKeySecret();
-        _awsRegion = Regions.valueOf(configuration.getAwsRegion());
+        _awsProfileName = configuration.getAwsProfileName();
+        _awsRegion = Region.of(configuration.getAwsRegion());
         _tableName = configuration.getDynamodbTableName();
         _keyColumn = configuration.getTokenSignatureColumn();
+        _roleARN = configuration.getAwsRoleARN();
     }
 
     @Override
@@ -92,42 +98,104 @@ public final class AccessTokenIssuedListener implements EventListener<IssuedAcce
         digest.update(signature.getBytes());
         String hashedSignature = Base64.getEncoder().encodeToString(digest.digest());
 
-        AmazonDynamoDB dynamoDB = AmazonDynamoDBClientBuilder
-                .standard()
-                .withRegion(_awsRegion)
-                .withCredentials(new AWSStaticCredentialsProvider(
-                        new BasicAWSCredentials(_awsAccessKeyId,_awsAccessKeySecret)))
+        /* Use AccessKey and Secret from config */
+        if(_awsAccessKeyId.isPresent() && _awsAccessKeySecret.isPresent()) {
+            _creds = StaticCredentialsProvider.create(AwsBasicCredentials.create(_awsAccessKeyId.get(), _awsAccessKeySecret.get()));
+        }
+        /* If a profile name is defined get credentials from configured profile from ~/.aws/credentials */
+        else if(_awsProfileName.isPresent())
+        {
+            _creds = ProfileCredentialsProvider.builder()
+                .profileName(_awsProfileName.get())
+                .build();
+        }
+
+        /* roleARN is present, get temporary credentials through AssumeRole */
+        if(_roleARN.isPresent())
+            _creds = getNewCredentialsFromAssumeRole(_creds);
+
+        putTokenData(hashedSignature, event, tokenValue);
+
+    }
+
+    private AwsCredentialsProvider getNewCredentialsFromAssumeRole(AwsCredentialsProvider creds)
+    {
+        StsClient stsClient = StsClient.builder()
+                .region(_awsRegion)
+                .credentialsProvider(creds)
                 .build();
 
-        PutItemRequest request = new PutItemRequest();
+        AssumeRoleRequest assumeRoleRequest = AssumeRoleRequest.builder()
+                .durationSeconds(3600)
+                .roleArn(_roleARN.get())
+                .roleSessionName("curity-split-token-publisher-session")
+                .build();
 
-        /* Setting Table Name */
-        request.setTableName(_tableName);
+        try
+        {
+            AssumeRoleResponse assumeRoleResult = stsClient.assumeRole(assumeRoleRequest);
 
-        /* Create a Map of attributes */
-        Map<String, AttributeValue> map = new HashMap<>();
-        map.put(_keyColumn, new AttributeValue(hashedSignature));
-        map.put("head_and_body", new AttributeValue(tokenValue));
-        map.put("expiration", new AttributeValue(String.valueOf(event.getExpires().getEpochSecond())));
+            if (!assumeRoleResult.sdkHttpResponse().isSuccessful())
+            {
+                _logger.warn("AssumeRole Request sent but was not successful: {}",
+                        assumeRoleResult.sdkHttpResponse().statusText().get() );
+                return creds; //Returning the original credentials
+            }
+            else
+            {
+                Credentials credentials = assumeRoleResult.credentials();
 
-        request.setItem(map);
+                AwsSessionCredentials asc = AwsSessionCredentials.create(credentials.accessKeyId(), credentials.secretAccessKey(), credentials.sessionToken());
+
+                _logger.debug("AssumeRole Request successful: {}", assumeRoleResult.sdkHttpResponse().statusText());
+
+                return StaticCredentialsProvider.create(asc); //returning temp credentials from the assumed role
+            }
+        }
+        catch(Exception e)
+        {
+            _logger.debug("AssumeRole Request failed: {}", e.getMessage());
+            throw _exceptionFactory.internalServerException(ErrorCode.EXTERNAL_SERVICE_ERROR);
+        }
+    }
+
+    private void putTokenData(String hashedSignature,IssuedAccessTokenOAuthEvent event, String tokenValue)
+    {
+        DynamoDbClient ddb = DynamoDbClient.builder()
+                .region(_awsRegion)
+                .credentialsProvider(_creds)
+                .build();
+
+        HashMap<String,AttributeValue> itemValues = new HashMap<>();
+        itemValues.put(_keyColumn, AttributeValue.builder().s(hashedSignature).build());
+        itemValues.put("expiration", AttributeValue.builder().n(String.valueOf(event.getExpires().getEpochSecond())).build());
+        itemValues.put("head_and_body", AttributeValue.builder().s(tokenValue).build());
+
+        PutItemRequest request = PutItemRequest.builder()
+                .tableName(_tableName)
+                .item(itemValues)
+                .build();
 
         try {
-            PutItemResult result = dynamoDB.putItem(request);
+            PutItemResponse response =  ddb.putItem(request);
 
-            if (result.getSdkHttpMetadata().getHttpStatusCode() != 200)
+            if (!response.sdkHttpResponse().isSuccessful() && response.sdkHttpResponse().statusText().isPresent())
             {
                 _logger.warn("Event posted to AWS DynamoDB but response was not successful: {}",
-                        result.getSdkHttpMetadata().getHttpStatusCode() );
+                        response.sdkHttpResponse().statusText().get() );
             }
             else
             {
                 _logger.debug("Successfully sent event to AWS DynamoDB: {}", event);
             }
-
-        } catch (Exception e)
+        }
+        catch (Exception e)
         {
             throw _exceptionFactory.internalServerException(ErrorCode.EXTERNAL_SERVICE_ERROR);
+        }
+        finally
+        {
+            ddb.close();
         }
     }
 }

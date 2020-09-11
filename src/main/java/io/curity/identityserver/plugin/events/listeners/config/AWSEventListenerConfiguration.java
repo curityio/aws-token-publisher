@@ -21,16 +21,25 @@ import se.curity.identityserver.sdk.config.annotation.DefaultString;
 import se.curity.identityserver.sdk.config.annotation.Description;
 import se.curity.identityserver.sdk.service.ExceptionFactory;
 
+import java.util.Optional;
+
 @SuppressWarnings("InterfaceNeverImplemented")
 public interface AWSEventListenerConfiguration extends Configuration
 {
+
     @Description("AWS Access Key ID with access to DynamoDB.")
-    String getAccessKeyId();
+    Optional<String> getAccessKeyId();
 
     @Description("AWS Access Key Secret.")
-    String getAccessKeySecret();
+    Optional<String> getAccessKeySecret();
 
-    @Description("The AWS Region where DynamoDB is deployed. Use standard AWS region format, ex. US_EAST_2.")
+    @Description("AWS Profile name to retrieve credentials from the system.")
+    Optional<String> getAwsProfileName();
+
+    @Description("Optional role ARN used when requesting temporary credentials, ex. arn:aws:iam::123456789012:role/dynamodb-role")
+    Optional<String> getAwsRoleARN();
+
+    @Description("The AWS Region where DynamoDB is deployed. Use standard AWS region format, ex. us-east-2.")
     String getAwsRegion();
 
     @Description("The DynamoDB Table to store the split token data.")
