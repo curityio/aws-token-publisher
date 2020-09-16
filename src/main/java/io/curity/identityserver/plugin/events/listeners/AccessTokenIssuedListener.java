@@ -166,8 +166,6 @@ public final class AccessTokenIssuedListener implements EventListener<IssuedAcce
 
     private void putTokenData(String hashedSignature,IssuedAccessTokenOAuthEvent event, String tokenValue)
     {
-        _logger.debug("IN PUT TOKEN: " + _creds.resolveCredentials().accessKeyId() + " " + _creds.resolveCredentials().secretAccessKey());
-
         DynamoDbClient ddb = DynamoDbClient.builder()
                 .region(_awsRegion)
                 .credentialsProvider(_creds)
