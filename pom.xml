@@ -30,7 +30,7 @@
 
     <groupId>io.curity.identityserver</groupId>
     <artifactId>identityserver.plugins.events.listeners.aws-token-publisher</artifactId>
-    <version>0.1.1</version>
+    <version>0.1.2</version>
     <name>AWS Token Publisher Demo Plugin</name>
     <licenses>
         <license>

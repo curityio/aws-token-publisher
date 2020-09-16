@@ -48,6 +48,7 @@ public final class AccessTokenIssuedListener implements EventListener<IssuedAcce
     private final String _keyColumn;
     private final Optional<String> _roleARN;
     private AwsCredentialsProvider _creds;
+    private final Optional<Boolean> _useInstanceProfile;
 
     public AccessTokenIssuedListener(AWSEventListenerConfiguration configuration)
     {
@@ -59,6 +60,7 @@ public final class AccessTokenIssuedListener implements EventListener<IssuedAcce
         _tableName = configuration.getDynamodbTableName();
         _keyColumn = configuration.getTokenSignatureColumn();
         _roleARN = configuration.getAwsRoleARN();
+        _useInstanceProfile = configuration.isUseEC2InstanceProfile();
     }
 
     @Override
@@ -98,8 +100,11 @@ public final class AccessTokenIssuedListener implements EventListener<IssuedAcce
         digest.update(signature.getBytes());
         String hashedSignature = Base64.getEncoder().encodeToString(digest.digest());
 
+        if(_useInstanceProfile.isPresent() && _useInstanceProfile.get()) {
+            _creds = InstanceProfileCredentialsProvider.builder().build();
+        }
         /* Use AccessKey and Secret from config */
-        if(_awsAccessKeyId.isPresent() && _awsAccessKeySecret.isPresent()) {
+        else if(_awsAccessKeyId.isPresent() && _awsAccessKeySecret.isPresent()) {
             _creds = StaticCredentialsProvider.create(AwsBasicCredentials.create(_awsAccessKeyId.get(), _awsAccessKeySecret.get()));
         }
         /* If a profile name is defined get credentials from configured profile from ~/.aws/credentials */
@@ -161,6 +166,8 @@ public final class AccessTokenIssuedListener implements EventListener<IssuedAcce
 
     private void putTokenData(String hashedSignature,IssuedAccessTokenOAuthEvent event, String tokenValue)
     {
+        _logger.debug("IN PUT TOKEN: " + _creds.resolveCredentials().accessKeyId() + " " + _creds.resolveCredentials().secretAccessKey());
+
         DynamoDbClient ddb = DynamoDbClient.builder()
                 .region(_awsRegion)
                 .credentialsProvider(_creds)

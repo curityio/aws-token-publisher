@@ -42,6 +42,9 @@ public interface AWSEventListenerConfiguration extends Configuration
     @Description("The AWS Region where DynamoDB is deployed. Use standard AWS region format, ex. us-east-2.")
     String getAwsRegion();
 
+    @Description("Enable this if the EC2 instance that the Curity Identity Server is running on has been assigned an IAM Role with permissions to DynamoDB. If this is enabled no Access Key ID, Access Key Secret, Aws Profile Name or Aws Role Arn are needed.")
+    Optional<Boolean> isUseEC2InstanceProfile();
+
     @Description("The DynamoDB Table to store the split token data.")
     @DefaultString("split-token")
     String getDynamodbTableName();
