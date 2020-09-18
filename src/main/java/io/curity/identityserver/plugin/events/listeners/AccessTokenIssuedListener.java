@@ -33,32 +33,25 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.Base64;
 import java.util.HashMap;
-import java.util.Optional;
 
 public final class AccessTokenIssuedListener implements EventListener<IssuedAccessTokenOAuthEvent>
 {
     private static final Logger _logger = LoggerFactory.getLogger(AccessTokenIssuedListener.class);
 
     private final ExceptionFactory _exceptionFactory;
-    private final Optional<String> _awsAccessKeyId;
-    private final Optional<String> _awsAccessKeySecret;
-    private final Optional<String> _awsProfileName;
     private final Region _awsRegion;
     private final String _tableName;
     private final String _keyColumn;
-    private final Optional<String> _roleARN;
     private AwsCredentialsProvider _creds;
+    private final AWSEventListenerConfiguration.AWSAccessMethod _accessMethod;
 
     public AccessTokenIssuedListener(AWSEventListenerConfiguration configuration)
     {
         _exceptionFactory = configuration.getExceptionFactory();
-        _awsAccessKeyId = configuration.getAccessKeyId();
-        _awsAccessKeySecret = configuration.getAccessKeySecret();
-        _awsProfileName = configuration.getAwsProfileName();
-        _awsRegion = Region.of(configuration.getAwsRegion());
+        _awsRegion = Region.of(configuration.getAwsRegion().getAWSRegion());
         _tableName = configuration.getDynamodbTableName();
         _keyColumn = configuration.getTokenSignatureColumn();
-        _roleARN = configuration.getAwsRoleARN();
+        _accessMethod = configuration.getDynamodbAccessMethod();
     }
 
     @Override
@@ -98,27 +91,39 @@ public final class AccessTokenIssuedListener implements EventListener<IssuedAcce
         digest.update(signature.getBytes());
         String hashedSignature = Base64.getEncoder().encodeToString(digest.digest());
 
+        /*Use Instance Profile from IAM Role applied to EC2 instance*/
+        if(_accessMethod.isEC2InstanceProfile().isPresent() && _accessMethod.isEC2InstanceProfile().get()) {
+            _creds = InstanceProfileCredentialsProvider.builder().build();
+        }
         /* Use AccessKey and Secret from config */
-        if(_awsAccessKeyId.isPresent() && _awsAccessKeySecret.isPresent()) {
-            _creds = StaticCredentialsProvider.create(AwsBasicCredentials.create(_awsAccessKeyId.get(), _awsAccessKeySecret.get()));
+        else if(_accessMethod.getAccessKeyIdAndSecret().isPresent()) {
+            _creds = StaticCredentialsProvider.create(AwsBasicCredentials.create(_accessMethod.getAccessKeyIdAndSecret().get().getAccessKeyId().get(), _accessMethod.getAccessKeyIdAndSecret().get().getAccessKeySecret().get()));
+
+            /* roleARN is present, get temporary credentials through AssumeRole */
+            if(_accessMethod.getAccessKeyIdAndSecret().get().getAwsRoleARN().isPresent())
+            {
+                _creds = getNewCredentialsFromAssumeRole(_creds, _accessMethod.getAccessKeyIdAndSecret().get().getAwsRoleARN().get());
+            }
         }
         /* If a profile name is defined get credentials from configured profile from ~/.aws/credentials */
-        else if(_awsProfileName.isPresent())
+        else if(_accessMethod.getAWSProfile().get().getAwsProfileName().isPresent())
         {
             _creds = ProfileCredentialsProvider.builder()
-                .profileName(_awsProfileName.get())
-                .build();
-        }
+                    .profileName(_accessMethod.getAWSProfile().get().getAwsProfileName().get())
+                    .build();
 
-        /* roleARN is present, get temporary credentials through AssumeRole */
-        if(_roleARN.isPresent())
-            _creds = getNewCredentialsFromAssumeRole(_creds);
+            /* roleARN is present, get temporary credentials through AssumeRole */
+            if(_accessMethod.getAWSProfile().get().getAwsRoleARN().isPresent())
+            {
+                _creds = getNewCredentialsFromAssumeRole(_creds, _accessMethod.getAWSProfile().get().getAwsRoleARN().get());
+            }
+        }
 
         putTokenData(hashedSignature, event, tokenValue);
 
     }
 
-    private AwsCredentialsProvider getNewCredentialsFromAssumeRole(AwsCredentialsProvider creds)
+    private AwsCredentialsProvider getNewCredentialsFromAssumeRole(AwsCredentialsProvider creds, String roleARN)
     {
         StsClient stsClient = StsClient.builder()
                 .region(_awsRegion)
@@ -127,7 +132,7 @@ public final class AccessTokenIssuedListener implements EventListener<IssuedAcce
 
         AssumeRoleRequest assumeRoleRequest = AssumeRoleRequest.builder()
                 .durationSeconds(3600)
-                .roleArn(_roleARN.get())
+                .roleArn(roleARN)
                 .roleSessionName("curity-split-token-publisher-session")
                 .build();
 
