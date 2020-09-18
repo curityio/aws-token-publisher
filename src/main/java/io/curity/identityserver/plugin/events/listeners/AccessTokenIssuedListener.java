@@ -48,7 +48,7 @@ public final class AccessTokenIssuedListener implements EventListener<IssuedAcce
     public AccessTokenIssuedListener(AWSEventListenerConfiguration configuration)
     {
         _exceptionFactory = configuration.getExceptionFactory();
-        _awsRegion = Region.of(configuration.getAwsRegion());
+        _awsRegion = Region.of(configuration.getAwsRegion().getAWSRegion());
         _tableName = configuration.getDynamodbTableName();
         _keyColumn = configuration.getTokenSignatureColumn();
         _accessMethod = configuration.getDynamodbAccessMethod();
