@@ -42,8 +42,10 @@ public final class AccessTokenIssuedListener implements EventListener<IssuedAcce
     private final Region _awsRegion;
     private final String _tableName;
     private final String _keyColumn;
+    private final String _hashingAlgorithm;
     private AwsCredentialsProvider _creds;
     private final AWSEventListenerConfiguration.AWSAccessMethod _accessMethod;
+
 
     public AccessTokenIssuedListener(AWSEventListenerConfiguration configuration)
     {
@@ -52,6 +54,7 @@ public final class AccessTokenIssuedListener implements EventListener<IssuedAcce
         _tableName = configuration.getDynamodbTableName();
         _keyColumn = configuration.getTokenSignatureColumn();
         _accessMethod = configuration.getDynamodbAccessMethod();
+        _hashingAlgorithm = configuration.getHashingAlgorithm().getAlgorithm();
     }
 
     @Override
@@ -79,11 +82,11 @@ public final class AccessTokenIssuedListener implements EventListener<IssuedAcce
 
         try
         {
-            digest = MessageDigest.getInstance("SHA-256");
+            digest = MessageDigest.getInstance(_hashingAlgorithm);
         }
         catch (NoSuchAlgorithmException e)
         {
-            _logger.warn("SHA-256 must be available in order to use the AWS event listener");
+            _logger.warn("{} must be available in order to use the AWS event listener", _hashingAlgorithm);
             throw _exceptionFactory.internalServerException(ErrorCode.GENERIC_ERROR,
                     "SHA-256 must be available in order to use the AWS event listener");
         }
