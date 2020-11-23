@@ -71,4 +71,24 @@ public interface AWSEventListenerConfiguration extends Configuration
     }
 
     ExceptionFactory getExceptionFactory();
+
+    @Description("Configure the hashing algorithm that will be used to hash the signature of the split token.")
+    HashingAlgorithm getHashingAlgorithm();
+
+    enum HashingAlgorithm {
+        sha_256("SHA-256"),
+        sha_384("SHA-384"),
+        sha_512("SHA-512");
+
+        HashingAlgorithm(String algorithm)
+        {
+            _algorithm = algorithm;
+        }
+
+        public String getAlgorithm()
+        {
+            return _algorithm;
+        }
+        private final String _algorithm;
+    }
 }
