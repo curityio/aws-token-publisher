@@ -19,6 +19,7 @@ package io.curity.identityserver.plugin.events.listeners.config;
 import se.curity.identityserver.sdk.config.Configuration;
 import se.curity.identityserver.sdk.config.OneOf;
 import se.curity.identityserver.sdk.config.annotation.DefaultBoolean;
+import se.curity.identityserver.sdk.config.annotation.DefaultEnum;
 import se.curity.identityserver.sdk.config.annotation.DefaultString;
 import se.curity.identityserver.sdk.config.annotation.Description;
 import se.curity.identityserver.sdk.service.ExceptionFactory;
@@ -45,6 +46,7 @@ public interface AWSEventListenerConfiguration extends Configuration
     interface AWSAccessMethod extends OneOf
     {
         Optional<AccessKeyIdAndSecret> getAccessKeyIdAndSecret();
+
         Optional<AWSProfile> getAWSProfile();
 
         interface AccessKeyIdAndSecret
@@ -75,7 +77,9 @@ public interface AWSEventListenerConfiguration extends Configuration
     @Description("Configure the hashing algorithm that will be used to hash the signature of the split token.")
     HashingAlgorithm getHashingAlgorithm();
 
-    enum HashingAlgorithm {
+    @DefaultEnum("SHA-256")
+    enum HashingAlgorithm
+    {
         sha_256("SHA-256"),
         sha_384("SHA-384"),
         sha_512("SHA-512");
@@ -89,6 +93,7 @@ public interface AWSEventListenerConfiguration extends Configuration
         {
             return _algorithm;
         }
+
         private final String _algorithm;
     }
 }
