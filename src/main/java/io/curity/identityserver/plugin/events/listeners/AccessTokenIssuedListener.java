@@ -46,7 +46,6 @@ public final class AccessTokenIssuedListener implements EventListener<IssuedAcce
     private AwsCredentialsProvider _creds;
     private final AWSEventListenerConfiguration.AWSAccessMethod _accessMethod;
 
-
     public AccessTokenIssuedListener(AWSEventListenerConfiguration configuration)
     {
         _exceptionFactory = configuration.getExceptionFactory();
