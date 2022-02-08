@@ -7,6 +7,13 @@
 This is an example event listener SDK Plugin for the Curity Identity Server. The plugin registers an event listener
 listening for issued access token events, and forwards them to an AWS deployed DynamoDB.
 
+## Changed in 0.1.4
+- Update software.amazon.awssdk:bom to 2.17.125 to remove MEDIUM Vulnerability - [GHSA-wx5j-54mm-rqqq](https://github.com/advisories/GHSA-wx5j-54mm-rqqq)
+
+## Changed in 0.1.3
+- Added default to hashing algorithm
+- Make hashing algorithm configurable
+
 ## Changed in 0.1.2
 - Optional setting to use an EC2 Instance Profile for DynamoDB access. This allows for assigning an IAM Role with DynamoDB permissions directly to an EC2 instance. The aws-token-publisher will then automatically resolve temporary credentials from that role. If this method is used no Access Key ID, Access Key Secret, Aws Profile Name or Aws Role Arn are needed.  
 - The AWS Region is now an Enum and is set through a drop-down menu in the configuration instead of a text field.
