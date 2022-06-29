@@ -86,8 +86,9 @@ public final class AccessTokenIssuedListener implements EventListener<IssuedAcce
         catch (NoSuchAlgorithmException e)
         {
             _logger.warn("{} must be available in order to use the AWS event listener", _hashingAlgorithm);
-            throw _exceptionFactory.internalServerException(ErrorCode.GENERIC_ERROR,
-                    "SHA-256 must be available in order to use the AWS event listener");
+            throw _exceptionFactory.internalServerException(ErrorCode.GENERIC_ERROR, 
+                String.format("%s must be available in order to use the AWS event listener", _hashingAlgorithm)
+            );
         }
 
         digest.update(signature.getBytes());
