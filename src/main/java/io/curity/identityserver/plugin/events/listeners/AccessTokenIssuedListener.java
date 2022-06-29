@@ -99,7 +99,7 @@ public final class AccessTokenIssuedListener implements EventListener<IssuedAcce
         }
         /* Use AccessKey and Secret from config */
         else if(_accessMethod.getAccessKeyIdAndSecret().isPresent()) {
-            _creds = StaticCredentialsProvider.create(AwsBasicCredentials.create(_accessMethod.getAccessKeyIdAndSecret().get().getAccessKeyId().get(), _accessMethod.getAccessKeyIdAndSecret().get().getAccessKeySecret().get()));
+            _creds = StaticCredentialsProvider.create(AwsBasicCredentials.create(_accessMethod.getAccessKeyIdAndSecret().get().getAccessKeyId(), _accessMethod.getAccessKeyIdAndSecret().get().getAccessKeySecret()));
 
             /* roleARN is present, get temporary credentials through AssumeRole */
             if(_accessMethod.getAccessKeyIdAndSecret().get().getAwsRoleARN().isPresent())
@@ -108,10 +108,10 @@ public final class AccessTokenIssuedListener implements EventListener<IssuedAcce
             }
         }
         /* If a profile name is defined get credentials from configured profile from ~/.aws/credentials */
-        else if(_accessMethod.getAWSProfile().get().getAwsProfileName().isPresent())
+        else if(_accessMethod.getAWSProfile().isPresent())
         {
             _creds = ProfileCredentialsProvider.builder()
-                    .profileName(_accessMethod.getAWSProfile().get().getAwsProfileName().get())
+                    .profileName(_accessMethod.getAWSProfile().get().getAwsProfileName())
                     .build();
 
             /* roleARN is present, get temporary credentials through AssumeRole */
