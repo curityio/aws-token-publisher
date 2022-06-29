@@ -52,9 +52,9 @@ Configure your listener by adding:
 Provide the credentials, that is the **AWS Access Key ID and AWS Access Key Secret**, of the user that has the permission to access the DynamoDB.
 Alternatively, choose **AWS Profile Name** to load credentials from the system (i.e. from `~/.aws/credentials`). Provide the name of the profile, that is the name of the entry in the credentials file.
 
-If **AWS Role Arn** is specified, an AssumeRole attempt will be made with the credentials found, either from config (Access Key ID and Access Key Secret) or from profile. The credentials then don't have direct access to DynamoDB but instead need to have access to the role that will provide temporary credentials to access DynamoDB
+If **AWS Role Arn** is specified, an AssumeRole attempt will be made with the provided AWS region and the credentials found, either from config (Access Key ID and Access Key Secret) or from profile. The credentials then don't have direct access to DynamoDB but instead need to have access to the role that will provide temporary credentials to access DynamoDB.
 
-Select **EC2 Instance Profile** if the Curity Identity Server runs on an EC2 instance and the instance has an IAM role assigned with permissions to access the DynamoDB.
+Select the option **EC2 Instance Profile** if the Curity Identity Server runs on an EC2 instance and the instance has an IAM role assigned with permissions to access the DynamoDB.
 
 ![Configure the listener](docs/configure-listener.png)
 
