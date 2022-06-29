@@ -7,28 +7,6 @@
 This is an example event listener SDK Plugin for the Curity Identity Server. The plugin registers an event listener
 listening for issued access token events, and forwards them to an AWS deployed DynamoDB.
 
-## Changed in 0.1.5
-- Update software.amazon.awssdk:bom to 2.17.203 to get netty up on version 4.1.77.
-
-## Changed in 0.1.4
-- Update software.amazon.awssdk:bom to 2.17.125 to remove MEDIUM Vulnerability - [GHSA-wx5j-54mm-rqqq](https://github.com/advisories/GHSA-wx5j-54mm-rqqq)
-
-## Changed in 0.1.3
-- Added default to hashing algorithm
-- Make hashing algorithm configurable
-
-## Changed in 0.1.2
-- Optional setting to use an EC2 Instance Profile for DynamoDB access. This allows for assigning an IAM Role with DynamoDB permissions directly to an EC2 instance. The aws-token-publisher will then automatically resolve temporary credentials from that role. If this method is used no Access Key ID, Access Key Secret, Aws Profile Name or Aws Role Arn are needed.  
-- The AWS Region is now an Enum and is set through a drop-down menu in the configuration instead of a text field.
-
-
-## Changed in 0.1.1
-- Using AWS SDK v2 (2.14.14)
-    - New SDK version now requires the Region format of `us-west-2` instead of `US_WEST_2`
-- Possibility to use credentials from local system (~/.aws/credentials) where plugin is running by specifying a profile name
-- Implemented ability to access DynamoDB via AssumeRole when the ARN of the role to assume is specified in configuration
-- The `expiration` is now stored as a Number instead of a String so that the [DynamoDB TTL](https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/TTL.html) function can be leveraged to automatically expire the cached token. 
-
 ## Building, installation and configuration
 
 To build the plugin, simply download it and run `mvn package`. This creates `identityserver.plugins.events.listeners.aws-token-publisher-1.0.0.jar` and copies all needed dependencies into `target/`
