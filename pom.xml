@@ -22,6 +22,15 @@
 
     <repositories>
         <repository>
+            <id>central</id>
+            <name>Central Repository</name>
+            <url>https://repo.maven.apache.org/maven2</url>
+            <layout>default</layout>
+            <snapshots>
+                <enabled>false</enabled>
+            </snapshots>
+        </repository>
+        <repository>
             <id>customer-release-repo</id>
             <url>https://nexus.curity.se/nexus/content/repositories/customer-release-repo</url>
             <snapshots><enabled>false</enabled></snapshots>
@@ -47,6 +56,7 @@
         <project.identityserver.sdkVersion>7.2.0</project.identityserver.sdkVersion>
         <project.awssdkVersion>2.17.220</project.awssdkVersion>
         <project.slf4jVersion>1.7.36</project.slf4jVersion>
+        <project.junitVersion>5.8.2</project.junitVersion>
     </properties>
 
     <build>
@@ -70,6 +80,9 @@
                             <goal>copy-dependencies</goal>
                         </goals>
                         <configuration>
+                            <includeScope>
+                                compile
+                            </includeScope>
                             <excludeArtifactIds>
                                 identityserver.sdk
                             </excludeArtifactIds>
@@ -114,6 +127,23 @@
             <groupId>software.amazon.awssdk</groupId>
             <artifactId>sts</artifactId>
         </dependency>
-
+        <dependency>    
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter</artifactId>
+            <version>${project.junitVersion}</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.mockito</groupId>
+            <artifactId>mockito-core</artifactId>
+            <version>4.6.1</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-simple</artifactId>
+            <version>${project.slf4jVersion}</version>
+            <scope>test</scope>
+        </dependency>
     </dependencies>
 </project>
