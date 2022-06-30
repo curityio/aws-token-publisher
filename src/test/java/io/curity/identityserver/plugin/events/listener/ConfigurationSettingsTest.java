@@ -132,10 +132,10 @@ public class ConfigurationSettingsTest {
     }
 
     @Test
-    public void testLoadWithArmRole() {
-        AWSEventListenerConfiguration awsProfileWithArmRoleConfig = Mockito.mock(AWSEventListenerConfiguration.class);
+    public void testLoadWithAwsRole() {
+        AWSEventListenerConfiguration awsProfileWithAwsRoleConfig = Mockito.mock(AWSEventListenerConfiguration.class);
 
-        Mockito.when(awsProfileWithArmRoleConfig.getDynamodbAccessMethod()).thenReturn(new AWSAccessMethod() {
+        Mockito.when(awsProfileWithAwsRoleConfig.getDynamodbAccessMethod()).thenReturn(new AWSAccessMethod() {
 
             @Override
             public String id() {
@@ -161,8 +161,8 @@ public class ConfigurationSettingsTest {
             } 
         });
 
-        Mockito.when(awsProfileWithArmRoleConfig.getHashingAlgorithm()).thenReturn(HashingAlgorithm.sha_256);
-        Mockito.when(awsProfileWithArmRoleConfig.getAwsRegion()).thenReturn(AWSRegion.eu_west_3);
-        assertNotNull(new AccessTokenIssuedListener(awsProfileWithArmRoleConfig));
+        Mockito.when(awsProfileWithAwsRoleConfig.getHashingAlgorithm()).thenReturn(HashingAlgorithm.sha_256);
+        Mockito.when(awsProfileWithAwsRoleConfig.getAwsRegion()).thenReturn(AWSRegion.eu_west_3);
+        assertNotNull(new AccessTokenIssuedListener(awsProfileWithAwsRoleConfig));
     }
 }
