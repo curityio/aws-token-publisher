@@ -19,6 +19,7 @@ package io.curity.identityserver.plugin.events.listeners;
 import io.curity.identityserver.plugin.events.listeners.config.AWSEventListenerConfiguration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
 import se.curity.identityserver.sdk.data.events.IssuedAccessTokenOAuthEvent;
 import se.curity.identityserver.sdk.errors.ErrorCode;
 import se.curity.identityserver.sdk.event.EventListener;
@@ -94,7 +95,7 @@ public final class AccessTokenIssuedListener implements EventListener<IssuedAcce
         digest.update(signature.getBytes());
         String hashedSignature = Base64.getEncoder().encodeToString(digest.digest());
 
-        /*Use Instance Profile from IAM Role applied to EC2 instance*/
+        /* Use Instance Profile from IAM Role applied to EC2 instance */
         if(_accessMethod.isEC2InstanceProfile().isPresent() && _accessMethod.isEC2InstanceProfile().get()) {
             _creds = InstanceProfileCredentialsProvider.builder().build();
         }
@@ -108,7 +109,7 @@ public final class AccessTokenIssuedListener implements EventListener<IssuedAcce
                 _creds = getNewCredentialsFromAssumeRole(_creds, _accessMethod.getAccessKeyIdAndSecret().get().getAwsRoleARN().get());
             }
         }
-        /* If a profile name is defined get credentials from configured profile from ~/.aws/credentials */
+        /* If a profile name is defined, get credentials from configured profile from ~/.aws/credentials */
         else if(_accessMethod.getAWSProfile().isPresent())
         {
             _creds = ProfileCredentialsProvider.builder()
@@ -147,7 +148,7 @@ public final class AccessTokenIssuedListener implements EventListener<IssuedAcce
             {
                 _logger.warn("AssumeRole Request sent but was not successful: {}",
                         assumeRoleResult.sdkHttpResponse().statusText().get() );
-                return creds; //Returning the original credentials
+                return creds; //returning the original credentials
             }
             else
             {
@@ -199,6 +200,8 @@ public final class AccessTokenIssuedListener implements EventListener<IssuedAcce
         }
         catch (Exception e)
         {
+            _logger.warn("Failed to post event to AWS DynamoDB.");
+            _logger.debug("Error while writing to AWS DynamoDB: {}", e.getMessage(), e);
             throw _exceptionFactory.internalServerException(ErrorCode.EXTERNAL_SERVICE_ERROR);
         }
         finally
