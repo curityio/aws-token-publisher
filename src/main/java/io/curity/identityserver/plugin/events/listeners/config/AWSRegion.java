@@ -1,5 +1,5 @@
 /*
- *  Copyright 2020 Curity AB
+ *  Copyright 2022 Curity AB
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -26,11 +26,12 @@ public enum AWSRegion {
     us_west_2("us-west-2"),
     af_south_1("af-south-1"),
     eu_north_1("eu-north-1"),
-    eu_west_3("eu-west-3"),
-    eu_west_2("eu-west-2"),
     eu_west_1("eu-west-1"),
-    ap_northeast_2("ap-northeast-2"),
+    eu_west_2("eu-west-2"),
+    eu_west_3("eu-west-3"),
     ap_northeast_1("ap-northeast-1"),
+    ap_northeast_2("ap-northeast-2"),
+    ap_northeast_3("ap-northeast-3"),
     me_south_1("me-south-1"),
     sa_east_1("sa-east-1"),
     ap_east_1("ap-east-1"),
@@ -38,6 +39,7 @@ public enum AWSRegion {
     us_gov_west_1("us-gov-west-1"),
     ap_southeast_1("ap-southeast-1"),
     ap_southeast_2("ap-southeast-2"),
+    ap_southeast_3("ap-southeast-3"),
     us_iso_east_1("us-iso-east-1"),
     us_east_1("us-east-1"),
     us_east_2("us-east-2"),

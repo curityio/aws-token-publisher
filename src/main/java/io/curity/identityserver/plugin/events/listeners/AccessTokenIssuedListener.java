@@ -1,5 +1,5 @@
 /*
- *  Copyright 2020 Curity AB
+ *  Copyright 2022 Curity AB
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -19,6 +19,7 @@ package io.curity.identityserver.plugin.events.listeners;
 import io.curity.identityserver.plugin.events.listeners.config.AWSEventListenerConfiguration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
 import se.curity.identityserver.sdk.data.events.IssuedAccessTokenOAuthEvent;
 import se.curity.identityserver.sdk.errors.ErrorCode;
 import se.curity.identityserver.sdk.event.EventListener;
@@ -86,20 +87,21 @@ public final class AccessTokenIssuedListener implements EventListener<IssuedAcce
         catch (NoSuchAlgorithmException e)
         {
             _logger.warn("{} must be available in order to use the AWS event listener", _hashingAlgorithm);
-            throw _exceptionFactory.internalServerException(ErrorCode.GENERIC_ERROR,
-                    "SHA-256 must be available in order to use the AWS event listener");
+            throw _exceptionFactory.internalServerException(ErrorCode.GENERIC_ERROR, 
+                String.format("%s must be available in order to use the AWS event listener", _hashingAlgorithm)
+            );
         }
 
         digest.update(signature.getBytes());
         String hashedSignature = Base64.getEncoder().encodeToString(digest.digest());
 
-        /*Use Instance Profile from IAM Role applied to EC2 instance*/
+        /* Use Instance Profile from IAM Role applied to EC2 instance */
         if(_accessMethod.isEC2InstanceProfile().isPresent() && _accessMethod.isEC2InstanceProfile().get()) {
             _creds = InstanceProfileCredentialsProvider.builder().build();
         }
         /* Use AccessKey and Secret from config */
         else if(_accessMethod.getAccessKeyIdAndSecret().isPresent()) {
-            _creds = StaticCredentialsProvider.create(AwsBasicCredentials.create(_accessMethod.getAccessKeyIdAndSecret().get().getAccessKeyId().get(), _accessMethod.getAccessKeyIdAndSecret().get().getAccessKeySecret().get()));
+            _creds = StaticCredentialsProvider.create(AwsBasicCredentials.create(_accessMethod.getAccessKeyIdAndSecret().get().getAccessKeyId(), _accessMethod.getAccessKeyIdAndSecret().get().getAccessKeySecret()));
 
             /* roleARN is present, get temporary credentials through AssumeRole */
             if(_accessMethod.getAccessKeyIdAndSecret().get().getAwsRoleARN().isPresent())
@@ -107,11 +109,11 @@ public final class AccessTokenIssuedListener implements EventListener<IssuedAcce
                 _creds = getNewCredentialsFromAssumeRole(_creds, _accessMethod.getAccessKeyIdAndSecret().get().getAwsRoleARN().get());
             }
         }
-        /* If a profile name is defined get credentials from configured profile from ~/.aws/credentials */
-        else if(_accessMethod.getAWSProfile().get().getAwsProfileName().isPresent())
+        /* If a profile name is defined, get credentials from configured profile from ~/.aws/credentials */
+        else if(_accessMethod.getAWSProfile().isPresent())
         {
             _creds = ProfileCredentialsProvider.builder()
-                    .profileName(_accessMethod.getAWSProfile().get().getAwsProfileName().get())
+                    .profileName(_accessMethod.getAWSProfile().get().getAwsProfileName())
                     .build();
 
             /* roleARN is present, get temporary credentials through AssumeRole */
@@ -146,7 +148,7 @@ public final class AccessTokenIssuedListener implements EventListener<IssuedAcce
             {
                 _logger.warn("AssumeRole Request sent but was not successful: {}",
                         assumeRoleResult.sdkHttpResponse().statusText().get() );
-                return creds; //Returning the original credentials
+                return creds; //returning the original credentials
             }
             else
             {
@@ -198,6 +200,8 @@ public final class AccessTokenIssuedListener implements EventListener<IssuedAcce
         }
         catch (Exception e)
         {
+            _logger.warn("Failed to post event to AWS DynamoDB.");
+            _logger.debug("Error while writing to AWS DynamoDB: {}", e.getMessage(), e);
             throw _exceptionFactory.internalServerException(ErrorCode.EXTERNAL_SERVICE_ERROR);
         }
         finally

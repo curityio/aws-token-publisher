@@ -1,5 +1,5 @@
 /*
- *  Copyright 2020 Curity AB
+ *  Copyright 2022 Curity AB
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -18,7 +18,6 @@ package io.curity.identityserver.plugin.events.listeners.config;
 
 import se.curity.identityserver.sdk.config.Configuration;
 import se.curity.identityserver.sdk.config.OneOf;
-import se.curity.identityserver.sdk.config.annotation.DefaultBoolean;
 import se.curity.identityserver.sdk.config.annotation.DefaultEnum;
 import se.curity.identityserver.sdk.config.annotation.DefaultString;
 import se.curity.identityserver.sdk.config.annotation.Description;
@@ -51,9 +50,9 @@ public interface AWSEventListenerConfiguration extends Configuration
 
         interface AccessKeyIdAndSecret
         {
-            Optional<String> getAccessKeyId();
+            String getAccessKeyId();
 
-            Optional<String> getAccessKeySecret();
+            String getAccessKeySecret();
 
             @Description("Optional role ARN used when requesting temporary credentials, ex. arn:aws:iam::123456789012:role/dynamodb-role")
             Optional<String> getAwsRoleARN();
@@ -62,22 +61,22 @@ public interface AWSEventListenerConfiguration extends Configuration
         interface AWSProfile
         {
             @Description("AWS Profile name. Retrieves credentials from the system (~/.aws/credentials)")
-            Optional<String> getAwsProfileName();
+            String getAwsProfileName();
 
             @Description("Optional role ARN used when requesting temporary credentials, ex. arn:aws:iam::123456789012:role/dynamodb-role")
             Optional<String> getAwsRoleARN();
         }
 
         @Description("EC2 instance that the Curity Identity Server is running on has been assigned an IAM Role with permissions to DynamoDB.")
-        Optional<@DefaultBoolean(false) Boolean> isEC2InstanceProfile();
+        Optional<Boolean> isEC2InstanceProfile();
     }
 
     ExceptionFactory getExceptionFactory();
 
     @Description("Configure the hashing algorithm that will be used to hash the signature of the split token.")
+    @DefaultEnum("sha_256")
     HashingAlgorithm getHashingAlgorithm();
 
-    @DefaultEnum("SHA-256")
     enum HashingAlgorithm
     {
         sha_256("SHA-256"),
