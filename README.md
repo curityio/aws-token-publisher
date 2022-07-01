@@ -8,8 +8,8 @@ listening for issued access token events, and forwards them to an AWS deployed D
 
 ## Building, installation and configuration
 
-To build the plugin, simply download it and run `mvn package`. This creates `identityserver.plugins.events.listeners.aws-token-publisher-1.0.0.jar` and copies all needed dependencies into `target/`
-Create a new folder `aws_token_publisher` in `<idsvr_home>/usr/share/plugins/` then copy all the jar files to that folder
+To build the plugin, simply download it and run `mvn package`. This creates `identityserver.plugins.events.listeners.aws-token-publisher-1.0.0.jar` in `target/aws-token-publisher` and copies all needed dependencies into the same folder.
+Copy the folder `aws_token_publisher` with all the jar files to `<idsvr_home>/usr/share/plugins/`
 and (re)start the Curity Identity Server. Configure a new event listener (shown here using the Admin UI, but could also be configured through the CLI, REST or XML):
 
 ![Add new listener](docs/new-listener.png)
