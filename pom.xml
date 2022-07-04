@@ -94,7 +94,7 @@
                                 compile
                             </includeScope>
                             <excludeArtifactIds>
-                                identityserver.sdk
+                                identityserver.sdk,slf4j-api
                             </excludeArtifactIds>
                             <outputDirectory>${project.build.directory}/${project.identityserver.pluginDirectory}</outputDirectory>
                         </configuration>
